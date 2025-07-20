@@ -19,16 +19,18 @@ app.post('/translate', async (req, res) => {
   const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
   
   const prompt = `Translate the following song lyrics to Italian. Follow these guidelines:
+- IMPORTANT: Process sections in the EXACT ORDER they appear in the original lyrics
 - For each verse/section, provide BOTH the original English text AND the Italian translation
 - Format each section as: [ORIGINAL]original text here[/ORIGINAL][ITALIAN]translated text here[/ITALIAN]
 - Maintain the original meaning and emotional tone in translation
 - Keep the poetic flow and rhythm when possible
 - Use natural, contemporary Italian
 - Split into logical verses/stanzas using '|||' as separator between sections
-- Aim for 8-10 sections maximum
-- Preserve line breaks in both original and translated text
+- TRANSLATE THE ENTIRE SONG - do not skip any verses, choruses, or bridges
 - Each section should be suitable for an Instagram post slide
+- Preserve line breaks in both original and translated text
 - No introductory phrases, just the formatted content
+- START with the very first verse/line of the song and proceed chronologically
 
 Song: ${artist || 'Unknown'}
 Lyrics:

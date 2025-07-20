@@ -13,8 +13,7 @@ const Actions = {
     }
     
     const { translation } = await response.json();
-
-    const postSlides = document.querySelectorAll('.post-slide');
+    const postPreview = document.querySelector('.post-preview');
     
     // Clean up the response and split into sections
     const sections = translation
@@ -23,79 +22,264 @@ const Actions = {
       .split('|||')
       .map(section => section.trim())
       .filter(section => section.length > 0);
+      
+    console.log('SECTION PARSING DEBUG:');
+    console.log('Raw translation length:', translation.length);
+    console.log('After cleanup, before split:', translation.replace(/^.*?Here's.*?translation.*?:/i, '').replace(/^.*?Ecco.*?traduzione.*?:/i, '').substring(0, 200));
+    console.log('Split result count:', sections.length);
+
+    console.log('RAW TRANSLATION from server:', translation);
+    console.log('SECTIONS after splitting:', sections);
+    console.log('Number of sections:', sections.length);
+    
+    // Debug each section individually
+    sections.forEach((section, idx) => {
+      console.log(`SECTION ${idx} CONTENT:`, section.substring(0, 100) + '...');
+    });
+
+    // Create slides dynamically based on the number of sections
+    postPreview.innerHTML = ''; // Clear existing slides
+    
+    // Create slides: 1 cover slide + all sections
+    for (let i = 0; i < sections.length + 1; i++) {
+      const postSlide = document.createElement('div');
+      postSlide.className = `post-slide theme-${theme}`;
+      postSlide.id = `slide-${i}`;
+      postPreview.appendChild(postSlide);
+    }
+    
+    const postSlides = document.querySelectorAll('.post-slide');
 
     postSlides.forEach((slide, index) => {
+      console.log(`SLIDE LOOP: Processing slide ${index}, ID: ${slide.id}`);
       slide.innerHTML = '';
       slide.classList.remove('empty');
       
-      if (sections[index]) {
-        const section = sections[index];
+      // Ensure theme class is applied
+      if (!slide.classList.contains(`theme-${theme}`)) {
+        slide.classList.remove('theme-sunset', 'theme-ocean', 'theme-forest', 'theme-night', 'theme-rose');
+        slide.classList.add(`theme-${theme}`);
+      }
+      
+      if (index === 0) {
+        // First slide is always cover slide
+        const template = Actions.createProfessionalTemplate(
+          '', // no original text for cover
+          '', // no translated text for cover  
+          artist, 
+          index,
+          sections.length + 1
+        );
+        slide.appendChild(template);
+        
+      } else if (sections[index - 1]) {
+        // Content slides (offset by 1 because of cover slide)
+        const section = sections[index - 1];
+        
+        console.log(`=== PROCESSING SLIDE ${index + 1} ===`);
+        console.log(`RAW SECTION ${index + 1} FULL CONTENT:`, section);
+        console.log(`SECTION LENGTH:`, section.length);
         
         // Extract original and translated text using regex
         const originalMatch = section.match(/\[ORIGINAL\](.*?)\[\/ORIGINAL\]/s);
         const italianMatch = section.match(/\[ITALIAN\](.*?)\[\/ITALIAN\]/s);
         
         let originalText = originalMatch ? originalMatch[1].trim() : '';
-        let translatedText = italianMatch ? italianMatch[1].trim() : section;
+        let translatedText = italianMatch ? italianMatch[1].trim() : '';
         
-        // Convert \n to <br /> for proper line breaks
-        originalText = originalText.replace(/\n/g, '<br />');
-        translatedText = translatedText.replace(/\n/g, '<br />');
-        
-        // Create content wrapper
-        const content = document.createElement('div');
-        content.style.textAlign = 'center';
-        content.style.width = '100%';
-        content.style.position = 'relative';
-        content.style.zIndex = '2';
-        
-        // Add original text if available
-        if (originalText) {
-          const originalDiv = document.createElement('div');
-          originalDiv.className = 'original-text';
-          originalDiv.innerHTML = originalText;
-          content.appendChild(originalDiv);
-          
-          // Add divider
-          const divider = document.createElement('div');
-          divider.className = 'text-divider';
-          content.appendChild(divider);
+        // If no Italian match found, this might be a malformed section
+        if (!italianMatch && !originalMatch) {
+          // This is probably just Italian text without tags
+          translatedText = section.trim();
         }
         
-        // Add translated text
-        const translatedDiv = document.createElement('div');
-        translatedDiv.className = 'translated-text';
-        translatedDiv.innerHTML = translatedText;
-        content.appendChild(translatedDiv);
+        console.log(`DEBUG: Section ${index + 1}:`);
+        console.log('- Original match:', originalMatch);
+        console.log('- Italian match:', italianMatch);
+        console.log('- Extracted original:', originalText);
+        console.log('- Extracted translated:', translatedText);
+        console.log('- Original text length:', originalText.length);
+        console.log('- Translated text length:', translatedText.length);
         
-        // Add artist info on first slide
-        if (index === 0 && artist) {
-          const artistInfo = document.createElement('div');
-          artistInfo.className = 'artist-info';
-          artistInfo.textContent = artist;
-          content.appendChild(artistInfo);
-        }
+        // Clean up text formatting
+        originalText = originalText.replace(/\n/g, '<br />').replace(/["'"]/g, '');
+        translatedText = translatedText.replace(/\n/g, '<br />').replace(/["'"]/g, '');
         
-        // Add slide number on slides with content
-        if (sections.length > 1) {
-          const slideNumber = document.createElement('div');
-          slideNumber.className = 'slide-number';
-          slideNumber.textContent = `${index + 1}/${sections.length}`;
-          slide.appendChild(slideNumber);
-        }
+        // Create professional template structure
+        console.log(`BEFORE TEMPLATE CREATION: Slide ${index + 1}`);
+        console.log('- Final originalText:', originalText);
+        console.log('- Final translatedText:', translatedText);
+        console.log('- Final originalText length:', originalText.length);
+        console.log('- Final translatedText length:', translatedText.length);
         
-        slide.appendChild(content);
+        const template = Actions.createProfessionalTemplate(
+          originalText, 
+          translatedText, 
+          artist, 
+          index,
+          sections.length + 1
+        );
         
-        // Make slide editable
-        Actions.makeSlideEditable(slide, index, sections.length);
+        console.log(`SLIDE DEBUG: Appending template to slide ${index + 1}`);
+        console.log('- Template created:', template);
+        console.log('- Template innerHTML before append:', template.innerHTML);
+        
+        slide.appendChild(template);
+        
+        console.log('- Slide innerHTML after append:', slide.innerHTML);
+        console.log('- Translation elements in slide:', slide.querySelectorAll('.translation-text'));
+        
+        // Add decorative elements
+        Actions.addDecorativeElements(slide, index);
+        
       } else {
-        // Empty slide
+        // Empty slide styling
         slide.classList.add('empty');
         const emptyText = document.createElement('p');
-        emptyText.textContent = 'Slide ' + (index + 1);
+        emptyText.textContent = `Empty Slide ${index + 1}`;
         slide.appendChild(emptyText);
       }
     });
+    
+    // Final debug check - see what's actually in the slides
+    console.log('FINAL DEBUG: All slides processed');
+    document.querySelectorAll('.post-slide').forEach((slide, idx) => {
+      const translationEls = slide.querySelectorAll('.translation-text');
+      console.log(`Slide ${idx + 1} final state:`, {
+        hasTranslationElements: translationEls.length,
+        translationContent: translationEls.length > 0 ? translationEls[0].innerHTML : 'NO TRANSLATION ELEMENT',
+        slideClasses: slide.className,
+        slideInnerHTML: slide.innerHTML.substring(0, 200) + '...'
+      });
+    });
+  },
+
+  createProfessionalTemplate: (originalText, translatedText, artist, index, total = 10) => {
+    const container = document.createElement('div');
+    container.className = `template-container`;
+    
+    // Template variations for visual interest
+    const templateVariations = [
+      'cover-slide',    // 0 - Hero slide with artist info
+      'verse-standard', // 1 - Standard verse layout
+      'verse-centered', // 2 - Centered layout
+      'verse-minimal',  // 3 - Minimal design
+      'verse-accent',   // 4 - With accent elements
+      'verse-split',    // 5 - Split layout
+      'verse-elegant',  // 6 - Elegant typography
+      'verse-bold',     // 7 - Bold design
+      'verse-artistic', // 8 - Artistic layout
+      'outro-slide'     // 9 - Outro slide
+    ];
+    
+    const templateType = templateVariations[index] || 'verse-standard';
+    container.classList.add(templateType);
+    
+    if (index === 0) {
+      // Cover slide with artist information
+      const brandMark = document.createElement('div');
+      brandMark.className = 'template-brand';
+      brandMark.textContent = 'SONG TRANSLATION';
+      container.appendChild(brandMark);
+      
+      const title = document.createElement('h1');
+      title.className = 'template-title cover-title';
+      title.textContent = artist || 'Unknown Artist';
+      container.appendChild(title);
+      
+      const subtitle = document.createElement('div');
+      subtitle.className = 'template-subtitle cover-subtitle';
+      subtitle.textContent = 'TRADUZIONE ITALIANA';
+      container.appendChild(subtitle);
+      
+      // Add decorative line
+      const decorativeLine = document.createElement('div');
+      decorativeLine.className = 'decorative-line';
+      container.appendChild(decorativeLine);
+      
+    } else {
+      // Content slides with lyrics
+      // Main content area
+      const mainContent = document.createElement('div');
+      mainContent.className = 'main-content-area';
+      
+      // Original text (if exists)
+      if (originalText && originalText.trim()) {
+        const originalSection = document.createElement('div');
+        originalSection.className = 'original-section';
+        
+        const originalLabel = document.createElement('div');
+        originalLabel.className = 'text-label';
+        originalLabel.textContent = 'Original';
+        originalSection.appendChild(originalLabel);
+        
+        const originalContent = document.createElement('div');
+        originalContent.className = 'original-text';
+        originalContent.innerHTML = Actions.formatText(originalText);
+        originalSection.appendChild(originalContent);
+        
+        mainContent.appendChild(originalSection);
+      }
+      
+      // Italian translation
+      const translationSection = document.createElement('div');
+      translationSection.className = 'translation-section';
+      
+      const translationLabel = document.createElement('div');
+      translationLabel.className = 'text-label translation-label';
+      translationLabel.textContent = 'Italiano';
+      translationSection.appendChild(translationLabel);
+      
+      const translationContent = document.createElement('div');
+      translationContent.className = 'translation-text';
+      translationContent.innerHTML = Actions.formatText(translatedText);
+      translationSection.appendChild(translationContent);
+      
+      console.log(`TEMPLATE DEBUG: Creating Italian section for slide ${index + 1}`);
+      console.log('- translatedText passed in:', translatedText);
+      console.log('- formatText result:', Actions.formatText(translatedText));
+      console.log('- translationContent.innerHTML:', translationContent.innerHTML);
+      
+      mainContent.appendChild(translationSection);
+      container.appendChild(mainContent);
+    }
+    
+    // Slide number
+    const slideNumber = document.createElement('div');
+    slideNumber.className = 'slide-number';
+    slideNumber.textContent = `${index + 1}/${total}`;
+    container.appendChild(slideNumber);
+    
+    return container;
+  },
+
+  formatText: (text) => {
+    if (!text) return '';
+    
+    // Clean and format text for better display
+    return text
+      .replace(/\n/g, '<br>')
+      .replace(/["'"]/g, '')
+      .trim();
+  },
+
+  addDecorativeElements: (slide, index) => {
+    // Simplified decorative elements to reduce DOM complexity
+    if (index % 5 === 0) {
+      // Only add decorative elements to every 5th slide to reduce load
+      const decoration = document.createElement('div');
+      decoration.className = 'simple-decoration';
+      decoration.style.position = 'absolute';
+      decoration.style.top = '20px';
+      decoration.style.right = '20px';
+      decoration.style.width = '30px';
+      decoration.style.height = '30px';
+      decoration.style.background = 'currentColor';
+      decoration.style.opacity = '0.1';
+      decoration.style.borderRadius = '50%';
+      decoration.style.zIndex = '1';
+      slide.appendChild(decoration);
+    }
   },
 
   generateMetadata: async (lyrics, artist) => {
@@ -164,7 +348,7 @@ const Actions = {
           originalText.style.lineHeight = '1.3';
         }
         
-        const translatedText = exportSlide.querySelector('.translated-text');
+        const translatedText = exportSlide.querySelector('.translation-text');
         if (translatedText) {
           translatedText.style.fontSize = '42px';
           translatedText.style.lineHeight = '1.3';
@@ -252,7 +436,7 @@ const Actions = {
             originalText.style.lineHeight = '1.3';
           }
           
-          const translatedText = exportSlide.querySelector('.translated-text');
+          const translatedText = exportSlide.querySelector('.translation-text');
           if (translatedText) {
             translatedText.style.fontSize = '42px';
             translatedText.style.lineHeight = '1.3';
@@ -353,13 +537,17 @@ const Actions = {
     
     // Get current text content with better fallbacks
     const originalTextEl = originalContent.querySelector('.original-text');
-    const translatedTextEl = originalContent.querySelector('.translated-text');
+    const translatedTextEl = originalContent.querySelector('.translation-text');
     
     let originalText = '';
     let translatedText = '';
     
     if (originalTextEl) {
       originalText = originalTextEl.innerHTML.replace(/<br\s*\/?>/gi, '\n').replace(/"/g, '').trim();
+    }
+    
+    if (!translatedTextEl) {
+      translatedTextEl = originalContent.querySelector('.translation-text');
     }
     
     if (translatedTextEl) {
@@ -460,7 +648,7 @@ const Actions = {
   saveSlideEdit: (slide, originalContent, editContainer, newOriginal, newTranslated, index, totalSlides) => {
     // Update the original content
     let originalTextEl = originalContent.querySelector('.original-text');
-    let translatedTextEl = originalContent.querySelector('.translated-text');
+    let translatedTextEl = originalContent.querySelector('.translation-text');
     
     // If elements don't exist, create them
     if (!originalTextEl && newOriginal.trim()) {
@@ -476,7 +664,7 @@ const Actions = {
     
     if (!translatedTextEl) {
       translatedTextEl = document.createElement('div');
-      translatedTextEl.className = 'translated-text';
+      translatedTextEl.className = 'translation-text';
       // Insert before artist info or at the end
       const artistInfo = originalContent.querySelector('.artist-info');
       if (artistInfo) {
@@ -523,5 +711,42 @@ const Actions = {
     slide.classList.remove('editing');
     originalContent.style.display = '';
     editContainer.remove();
+  },
+
+  createDecorativeElements: (index) => {
+    const elements = [];
+    
+    // Create different decorative patterns for variety
+    switch (index % 4) {
+      case 0:
+        // Circle decoration
+        const circle = document.createElement('div');
+        circle.className = 'decoration-circle';
+        elements.push(circle);
+        break;
+        
+      case 1:
+        // Triangle decoration
+        const triangle = document.createElement('div');
+        triangle.className = 'decoration-triangle';
+        elements.push(triangle);
+        break;
+        
+      case 2:
+        // Dots decoration
+        const dots = document.createElement('div');
+        dots.className = 'decoration-dots';
+        elements.push(dots);
+        break;
+        
+      case 3:
+        // Pattern decoration
+        const pattern = document.createElement('div');
+        pattern.className = 'decoration-pattern';
+        elements.push(pattern);
+        break;
+    }
+    
+    return elements;
   }
 };

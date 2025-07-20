@@ -1,11 +1,12 @@
 const root = document.getElementById('root');
 
+// Theme names for template system (no background overrides)
 const themes = {
-  sunset: 'linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%)',
-  ocean: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-  forest: 'linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%)',
-  night: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
-  rose: 'linear-gradient(135deg, #e91e63 0%, #fce4ec 100%)'
+  sunset: 'sunset',
+  ocean: 'ocean', 
+  forest: 'forest',
+  night: 'night',
+  rose: 'rose'
 };
 
 let currentTheme = 'ocean';
@@ -127,11 +128,15 @@ function App() {
 
   for (let i = 0; i < 10; i++) {
     const postSlide = document.createElement('div');
-    postSlide.className = 'post-slide empty';
-    postSlide.style.background = themes[currentTheme];
+    postSlide.className = `post-slide empty theme-${currentTheme}`;
+    postSlide.id = `slide-${i}`;
     
     const emptyText = document.createElement('p');
-    emptyText.textContent = 'Slide ' + (i + 1);
+    emptyText.textContent = `Empty Slide ${i + 1}`;
+    emptyText.style.color = '#999';
+    emptyText.style.fontSize = '14px';
+    emptyText.style.textAlign = 'center';
+    emptyText.style.margin = 'auto';
     postSlide.appendChild(emptyText);
     
     postPreview.appendChild(postSlide);
@@ -169,7 +174,10 @@ function selectTheme(themeName, themeOptions) {
   // Update post slides with new theme
   const postSlides = document.querySelectorAll('.post-slide');
   postSlides.forEach(slide => {
-    slide.style.background = themes[currentTheme];
+    // Remove all theme classes first
+    slide.classList.remove('theme-sunset', 'theme-ocean', 'theme-forest', 'theme-night', 'theme-rose');
+    // Add current theme class
+    slide.classList.add(`theme-${themeName}`);
   });
 }
 
